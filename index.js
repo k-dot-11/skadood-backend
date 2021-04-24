@@ -3,10 +3,10 @@ const { google } = require('googleapis');
 const open = require('open');
 const express = require('express');
 
-var cors = require('cors')
-const app = express()
- 
-app.use(cors())
+var cors = require('cors');
+const app = express();
+
+app.use(cors());
 
 // middleware
 app.use(express.json());
@@ -34,8 +34,8 @@ app.post('/create-event', (req, res) => {
 app.post('/create-user', (req, res) => {
 	fs.readFile('credentials.json', (err, content) => {
 		if (err) return console.log('Error loading client secret file:', err);
-		createUser(JSON.parse(content));
-		res.end('hmmmm');
+		let result = createUser(JSON.parse(content));
+		res.send({url : result});
 	});
 });
 
@@ -68,7 +68,7 @@ function authorize(credentials, call, email) {
 function createUser(credentials, call, email) {
 	const { client_secret, client_id, redirect_uris, response_type } = credentials.installed;
 	const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0], response_type);
-	getAccessToken(oAuth2Client);
+	return getAccessToken(oAuth2Client).toString();
 }
 
 function getAccessToken(oAuth2Client) {
@@ -77,11 +77,10 @@ function getAccessToken(oAuth2Client) {
 		scope: SCOPES,
 		response_type: 'code'
 	});
-	open(authUrl);
-	
+	return authUrl.toString();
 }
 
-function setToken( credentials,code,email) {
+function setToken(credentials, code, email) {
 	const { client_secret, client_id, redirect_uris, response_type } = credentials.installed;
 	const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0], response_type);
 	oAuth2Client.getToken(code, (err, token) => {
@@ -91,16 +90,15 @@ function setToken( credentials,code,email) {
 
 		docRef.set(token);
 	});
-	
 }
 
 async function createEvent(auth) {
 	var event = {
 		end: {
-			dateTime: '2021-04-19T15:00:00+05:30'
+			dateTime: '2021-05-27T15:00:00+05:30'
 		},
 		start: {
-			dateTime: '2021-04-19T14:00:00+05:30'
+			dateTime: '2021-05-27T14:00:00+05:30'
 		},
 
 		conferenceData: {
@@ -136,10 +134,6 @@ app.listen(port, () => {
 	console.log(`Example app listening at http://localhost:${port}`);
 });
 module.exports = app;
-
-
-
-
 
 // function listEvents(auth) {
 // 	const calendar = google.calendar({ version: 'v3', auth });
