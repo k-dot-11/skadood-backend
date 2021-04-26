@@ -109,7 +109,7 @@ async function createEvent(auth) {
 				requestId: 'anything'
 			}
 		},
-		summary: 'title',
+		summary: 'React native se aaye h',
 		description: 'mnot a doctor'
 	};
 	const calendar = google.calendar({ version: 'v3', auth });
@@ -160,29 +160,3 @@ module.exports = app;
 // 		}
 // 	);
 // }
-
-// app.post('/put', (req, res) => {
-// docRef = db.collection('tokens').doc('alovelace');
-
-// docRef.set({
-// 	first: 'Ada',
-// 	last: 'Lovelace',
-// 	born: 1815
-// });
-
-// 	res.end('bic')
-// });
-
-// app.get('/snap', (req, res) => {
-// 	const usersRef = db.collection('tokens').doc('alovelace');
-
-// 	usersRef.get().then((docSnapshot) => {
-// 		if (docSnapshot.exists) {
-// 			usersRef.onSnapshot((doc) => {
-// 				res.send(doc.data());
-// 			});
-// 		} else {
-// 			res.send('doesnt exist');
-// 		}
-// 	});
-// });
