@@ -17,6 +17,7 @@ const SCOPES = [ 'https://www.googleapis.com/auth/calendar', 'https://www.google
 var admin = require('firebase-admin');
 
 var serviceAccount = require('./firebasecreds.json');
+const TOKEN_PATH = 'token.json';
 
 admin.initializeApp({
 	credential: admin.credential.cert(serviceAccount)
@@ -27,7 +28,14 @@ app.post('/create-event', (req, res) => {
 	fs.readFile('credentials.json', (err, content) => {
 		if (err) return console.log('Error loading client secret file:', err);
 		authorize(JSON.parse(content), createEvent, req.body.email);
-		res.end('hmmmm');
+		res.send('hmmmm');
+	});
+});
+
+app.post('/list-events', (req, res) => {
+	fs.readFile('credentials.json', (err, content) => {
+		if (err) return console.log('Error loading client secret file:', err);
+		authorize(JSON.parse(content), listEvents, req.body.email);
 	});
 });
 
@@ -35,7 +43,7 @@ app.post('/create-user', (req, res) => {
 	fs.readFile('credentials.json', (err, content) => {
 		if (err) return console.log('Error loading client secret file:', err);
 		let result = createUser(JSON.parse(content));
-		res.send({url : result});
+		res.send({ url: result });
 	});
 });
 
@@ -47,6 +55,32 @@ app.post('/set-token', (req, res) => {
 	});
 });
 
+function listEvents(auth) {
+	const calendar = google.calendar({ version: 'v3', auth });
+	calendar.events.list(
+		{
+			calendarId: 'primary',
+			timeMin: new Date().toISOString(),
+			maxResults: 10,
+			singleEvents: true,
+			orderBy: 'startTime'
+		},
+		(err, res) => {
+			if (err) return console.log('The API returned an error: ' + err);
+			const events = res.data.items;
+			if (events.length) {
+				console.log('Upcoming 10 events:');
+				events.map((event, i) => {
+					const start = event.start.dateTime || event.start.date;
+					console.log(`${start} - ${event.summary}`);
+				});
+			} else {
+				console.log('No upcoming events found.');
+			}
+		}
+	);
+}
+
 function authorize(credentials, call, email) {
 	const { client_secret, client_id, redirect_uris, response_type } = credentials.installed;
 	const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0], response_type);
@@ -57,7 +91,7 @@ function authorize(credentials, call, email) {
 		if (docSnapshot.exists) {
 			usersRef.onSnapshot((doc) => {
 				oAuth2Client.setCredentials(doc.data());
-				call(oAuth2Client);
+				return call(oAuth2Client);
 			});
 		} else {
 			res.send('doesnt exist');
@@ -73,7 +107,7 @@ function createUser(credentials, call, email) {
 
 function getAccessToken(oAuth2Client) {
 	const authUrl = oAuth2Client.generateAuthUrl({
-		access_type: 'online',
+		access_type: 'offline',
 		scope: SCOPES,
 		response_type: 'code'
 	});
@@ -87,8 +121,11 @@ function setToken(credentials, code, email) {
 		if (err) return console.error('Error retrieving access token', err);
 		oAuth2Client.setCredentials(token);
 		docRef = db.collection('tokens').doc(email);
-
 		docRef.set(token);
+		fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
+			if (err) return console.error(err);
+			console.log('Token stored to', TOKEN_PATH);
+		});
 	});
 }
 
@@ -134,29 +171,3 @@ app.listen(port, () => {
 	console.log(`Example app listening at http://localhost:${port}`);
 });
 module.exports = app;
-
-// function listEvents(auth) {
-// 	const calendar = google.calendar({ version: 'v3', auth });
-// 	calendar.events.list(
-// 		{
-// 			calendarId: 'primary',
-// 			timeMin: new Date().toISOString(),
-// 			maxResults: 16,
-// 			singleEvents: true,
-// 			orderBy: 'startTime'
-// 		},
-// 		(err, res) => {
-// 			if (err) return console.log('The API returned an error: ' + err);
-// 			const events = res.data.items;
-// 			if (events.length) {
-// 				console.log('Upcoming 10 events:');
-// 				events.map((event, i) => {
-// 					const start = event.start.dateTime || event.start.date;
-// 					console.log(`${start} - ${event.summary}`);
-// 				});
-// 			} else {
-// 				console.log('No upcoming events found.');
-// 			}
-// 		}
-// 	);
-// }
